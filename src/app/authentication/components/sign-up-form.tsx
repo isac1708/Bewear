@@ -1,6 +1,8 @@
 "use cliente";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -21,22 +23,33 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { auth } from "@/lib/auth";
+import { authClient } from "@/lib/auth-client";
 
-const formSchema = z.object({
-  name: z.string("Nome inválido").trim().min(1, "Nome é obrigatório"),
-  email: z.email("Email inválido"),
-  password: z.string("senha inválida").min(6, "A Senha deve ter mais que 6 * caracteres"),
-  passwordConfirmation: z
-    .string()
-    .min(6, "A confirmação de senha deve ter mais que 6 caracteres"),
-}).refine((data) =>{return data.password === data.passwordConfirmation}, {
-  error: "As senhas não conferem",
-  path: ["passwordConfirmation"],
-},
-);
+const formSchema = z
+  .object({
+    name: z.string("Nome inválido").trim().min(1, "Nome é obrigatório"),
+    email: z.email("Email inválido"),
+    password: z
+      .string("senha inválida")
+      .min(6, "A Senha deve ter mais que 6 * caracteres"),
+    passwordConfirmation: z
+      .string()
+      .min(6, "A confirmação de senha deve ter mais que 6 caracteres"),
+  })
+  .refine(
+    (data) => {
+      return data.password === data.passwordConfirmation;
+    },
+    {
+      error: "As senhas não conferem",
+      path: ["passwordConfirmation"],
+    },
+  );
 
 type FormValues = z.infer<typeof formSchema>;
 const SignUpForm = () => {
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -47,9 +60,26 @@ const SignUpForm = () => {
     },
   });
 
-  function onSubmit(values: FormValues) {
-    console.log("Formulario enviado com sucesso!");
-    console.log(values);
+  async function onSubmit(values: FormValues) {
+    await authClient.signUp.email({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+      fetchOptions: {
+        onSuccess: () => {
+          router.push("/");
+        },
+        onError: (error) => {
+          if (error.error.code === "USER_ALREADY_EXISTS") {
+            toast.error("Email já cadastrado");
+            form.setError("email", {
+              message: "Email já cadastrado",
+            });
+          }
+          toast.error(error.error.message);
+        },
+      },
+    });
   }
 
   return (

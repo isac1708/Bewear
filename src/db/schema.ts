@@ -13,7 +13,7 @@ export const userTable = pgTable("user", {
  updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()).notNull()
                 });
 
-export const session = pgTable("session", {
+export const sessionTable = pgTable("session", {
                     id: text('id').primaryKey(),
                     expiresAt: timestamp('expires_at').notNull(),
  token: text('token').notNull().unique(),
@@ -24,7 +24,7 @@ export const session = pgTable("session", {
  userId: text('user_id').notNull().references(()=> userTable.id, { onDelete: 'cascade' })
                 });
 
-export const account = pgTable("account", {
+export const accountTable = pgTable("account", {
                     id: text('id').primaryKey(),
                     accountId: text('account_id').notNull(),
  providerId: text('provider_id').notNull(),
