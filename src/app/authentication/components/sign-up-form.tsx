@@ -72,7 +72,7 @@ const SignUpForm = () => {
         onError: (error) => {
           if (error.error.code === "USER_ALREADY_EXISTS") {
             toast.error("Email já cadastrado");
-            form.setError("email", {
+            return form.setError("email", {
               message: "Email já cadastrado",
             });
           }
@@ -127,7 +127,7 @@ const SignUpForm = () => {
                   <FormItem>
                     <FormLabel>Senha</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite sua senha:" {...field} />
+                      <Input type="password" placeholder="Digite sua senha:" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,7 +140,7 @@ const SignUpForm = () => {
                   <FormItem>
                     <FormLabel>Confirmação de senha</FormLabel>
                     <FormControl>
-                      <Input placeholder="Confirme sua senha" {...field} />
+                      <Input type="password" placeholder="Confirme sua senha" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
