@@ -1,4 +1,4 @@
-"use cliente";
+"use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -23,7 +23,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { auth } from "@/lib/auth";
 import { authClient } from "@/lib/auth-client";
 
 const formSchema = z
@@ -84,7 +83,7 @@ const SignUpForm = () => {
 
   return (
     <>
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Entrar</CardTitle>
           <CardDescription>
@@ -93,7 +92,7 @@ const SignUpForm = () => {
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-3 w-full ">
               <FormField
                 control={form.control}
                 name="name"
