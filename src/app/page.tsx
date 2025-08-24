@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { db } from "@/db";
 
+import CategorySelector from "./authentication/components/common/category-selector";
 import Header from "./authentication/components/common/header";
 import ProductList from "./authentication/components/common/product-list";
 
@@ -11,6 +12,8 @@ const Home = async () => {
       variants: true,
     },
   });
+
+  const categories = await db.query.categoryTable.findMany({});
   return (
     <>
       <Header />
@@ -27,6 +30,9 @@ const Home = async () => {
         </div>
 
         <ProductList products={products} title="Mais vendidos" />
+        <div>
+        {CategorySelector({categories})}
+        </div>
 
         <div className="px-5">
           <Image
