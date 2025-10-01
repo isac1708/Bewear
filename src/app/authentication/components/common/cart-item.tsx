@@ -33,11 +33,31 @@ const CartItem = ({
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     }
   });
-  
+
+  const decreaseProductQuantityMutation = useMutation({
+    mutationKey: ["decrease-cart-product-quantity"],
+    mutationFn: () => removeProductFromCart({ cartItemId: id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+  });
+
   const handleRemoveProductFromCart = () => {
     removeProductFromCartMutation.mutate(undefined,{
       onSuccess: () => {
         toast.success("Produto removido do carrinho");
+      }
+    });
+  }
+
+  const handleDecreaseProductQuantity = () => {
+    if(quantity === 1){
+      handleRemoveProductFromCart();
+      return;
+    }
+    decreaseProductQuantityMutation.mutate(undefined,{
+      onSuccess: () => {
+        toast.success("Quantidade do produto atualizada");
       }
     });
   }
@@ -58,7 +78,7 @@ const CartItem = ({
             {productVariantName}
           </p>
           <div className="flex w-[100px] items-center justify-between rounded-lg border p-1">
-            <Button className="h-4 w-4" variant="ghost" onClick={() => {}}>
+            <Button className="h-4 w-4" variant="ghost" onClick={handleDecreaseProductQuantity}>
               <MinusIcon className="h-2 w-2" />
             </Button>
             <p className="text-xs font-medium">{quantity}</p>
