@@ -3,6 +3,7 @@ import { MinusIcon, PlusIcon, TrashIcon } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
+import { addCartProducts } from "@/actions/add-cart-products";
 import { removeProductFromCart } from "@/actions/remove-cart-product";
 import { Button } from "@/components/ui/button";
 import { formatCentesToBRL } from "@/helpers/money";
@@ -10,6 +11,7 @@ import { formatCentesToBRL } from "@/helpers/money";
 interface CartItemProps {
   id: string;
   productName: string;
+  productVariantId: string;
   productVariantName: string;
   productVariantImageUrl: string;
   productVariantPriceInCents: number;
@@ -19,6 +21,7 @@ interface CartItemProps {
 const CartItem = ({
   id,
   productName,
+  productVariantId,
   productVariantName,
   productVariantImageUrl,
   productVariantPriceInCents,
@@ -34,6 +37,13 @@ const CartItem = ({
     }
   });
 
+  const increaseProductQuantityMutation = useMutation({
+    mutationKey: ["increase-cart-product-quantity"],
+    mutationFn: () => addCartProducts({ productVariantId,quantity: 1 }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    }
+  });
   const decreaseProductQuantityMutation = useMutation({
     mutationKey: ["decrease-cart-product-quantity"],
     mutationFn: () => removeProductFromCart({ cartItemId: id }),
@@ -61,6 +71,13 @@ const CartItem = ({
       }
     });
   }
+  const handleIncreaseProductQuantity = () => {
+    increaseProductQuantityMutation.mutate(undefined,{
+      onSuccess: () => {
+        toast.success("Quantidade do produto atualizada");
+      }
+    });
+  };
 
   return (
     <div className="flex items-center justify-between">
@@ -82,7 +99,7 @@ const CartItem = ({
               <MinusIcon className="h-2 w-2" />
             </Button>
             <p className="text-xs font-medium">{quantity}</p>
-            <Button className="h-4 w-4" variant="ghost" onClick={() => {}}>
+            <Button className="h-4 w-4" variant="ghost" onClick={handleIncreaseProductQuantity}>
               <PlusIcon className="h-2 w-2" />
             </Button>
           </div>
