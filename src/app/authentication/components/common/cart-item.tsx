@@ -1,6 +1,9 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MinusIcon, PlusIcon, TrashIcon } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 
+import { removeProductFromCart } from "@/actions/remove-cart-product";
 import { Button } from "@/components/ui/button";
 import { formatCentesToBRL } from "@/helpers/money";
 
@@ -21,6 +24,24 @@ const CartItem = ({
   productVariantPriceInCents,
   quantity,
 }: CartItemProps) => {
+
+  const queryClient = useQueryClient();
+  const removeProductFromCartMutation = useMutation({
+    mutationKey: ["remove-cart-product"],
+    mutationFn: () => removeProductFromCart({ cartItemId: id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    }
+  });
+  
+  const handleRemoveProductFromCart = () => {
+    removeProductFromCartMutation.mutate(undefined,{
+      onSuccess: () => {
+        toast.success("Produto removido do carrinho");
+      }
+    });
+  }
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -47,13 +68,13 @@ const CartItem = ({
           </div>
         </div>
       </div>
-      <div className="flex flex-col items-end gap-2 justify-center">
-        <Button variant="outline" size="icon">
-        <TrashIcon/>
-      </Button>
-      <p className="text-sm font-bold">
-        {formatCentesToBRL(productVariantPriceInCents)}
-      </p>
+      <div className="flex flex-col items-end justify-center gap-2">
+        <Button variant="outline" size="icon" onClick={handleRemoveProductFromCart}>
+          <TrashIcon />
+        </Button>
+        <p className="text-sm font-bold">
+          {formatCentesToBRL(productVariantPriceInCents)}
+        </p>
       </div>
     </div>
   );
