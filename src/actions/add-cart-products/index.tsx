@@ -9,15 +9,14 @@ import { auth } from "@/lib/auth";
 
 import { AddProductCartSchema, addProductCartSchema } from "./schema";
 
-export const addCartProducts = async (data: AddProductCartSchema) => {
+export const addProductToCart = async (data: AddProductCartSchema) => {
   addProductCartSchema.parse(data);
   const session = await auth.api.getSession({
     headers: await headers(),
   });
   if (!session?.user) {
-    throw new Error("You must be logged in to add products to cart");
+    throw new Error("Unauthorized");
   }
-
   const productVariant = await db.query.productVariantTable.findFirst({
     where: (productVariant, { eq }) =>
       eq(productVariant.id, data.productVariantId),
@@ -26,9 +25,9 @@ export const addCartProducts = async (data: AddProductCartSchema) => {
     throw new Error("Product variant not found");
   }
   const cart = await db.query.cartTable.findFirst({
-    where: eq(cartTable.userId, session.user.id),
+    where: (cart, { eq }) => eq(cart.userId, session.user.id),
   });
-  let cartId: string | undefined = cart?.id;
+  let cartId = cart?.id;
   if (!cartId) {
     const [newCart] = await db
       .insert(cartTable)
@@ -50,11 +49,11 @@ export const addCartProducts = async (data: AddProductCartSchema) => {
         quantity: cartItem.quantity + data.quantity,
       })
       .where(eq(cartItemTable.id, cartItem.id));
-      return;
+    return;
   }
-    await db.insert(cartItemTable).values({
-        cartId,
-        productVariantId: data.productVariantId,
-        quantity: data.quantity,
-      });
+  await db.insert(cartItemTable).values({
+    cartId,
+    productVariantId: data.productVariantId,
+    quantity: data.quantity,
+  });
 };

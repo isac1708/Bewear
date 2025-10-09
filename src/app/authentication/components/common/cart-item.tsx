@@ -1,12 +1,12 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MinusIcon, PlusIcon, TrashIcon } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
-import { addCartProducts } from "@/actions/add-cart-products";
-import { removeProductFromCart } from "@/actions/remove-cart-product";
 import { Button } from "@/components/ui/button";
 import { formatCentesToBRL } from "@/helpers/money";
+import { useDecreaseCartProduct } from "@/hooks/mutations/use-decrease-cart-product";
+import { useIncreaseCartProduct } from "@/hooks/mutations/use-increase-cart-product";
+import { useRemoveProductFromCart } from "@/hooks/mutations/use-remove-product-from-cart";
 
 interface CartItemProps {
   id: string;
@@ -21,61 +21,45 @@ interface CartItemProps {
 const CartItem = ({
   id,
   productName,
-  productVariantId,
+   productVariantId,
   productVariantName,
   productVariantImageUrl,
   productVariantPriceInCents,
   quantity,
 }: CartItemProps) => {
+  
 
-  const queryClient = useQueryClient();
-  const removeProductFromCartMutation = useMutation({
-    mutationKey: ["remove-cart-product"],
-    mutationFn: () => removeProductFromCart({ cartItemId: id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    }
-  });
+  const decreaseProductQuantityMutation = useDecreaseCartProduct(id);
+  
+  const removeProductFromCartMutation = useRemoveProductFromCart(id);
 
-  const increaseProductQuantityMutation = useMutation({
-    mutationKey: ["increase-cart-product-quantity"],
-    mutationFn: () => addCartProducts({ productVariantId,quantity: 1 }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    }
-  });
-  const decreaseProductQuantityMutation = useMutation({
-    mutationKey: ["decrease-cart-product-quantity"],
-    mutationFn: () => removeProductFromCart({ cartItemId: id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    },
-  });
+  const increaseProductQuantityMutation =
+    useIncreaseCartProduct(productVariantId);
 
   const handleRemoveProductFromCart = () => {
-    removeProductFromCartMutation.mutate(undefined,{
+    removeProductFromCartMutation.mutate(undefined, {
       onSuccess: () => {
         toast.success("Produto removido do carrinho");
-      }
+      },
     });
-  }
+  };
 
   const handleDecreaseProductQuantity = () => {
-    if(quantity === 1){
+    if (quantity === 1) {
       handleRemoveProductFromCart();
       return;
     }
-    decreaseProductQuantityMutation.mutate(undefined,{
+    decreaseProductQuantityMutation.mutate(undefined, {
       onSuccess: () => {
         toast.success("Quantidade do produto atualizada");
-      }
+      },
     });
-  }
+  };
   const handleIncreaseProductQuantity = () => {
-    increaseProductQuantityMutation.mutate(undefined,{
+    increaseProductQuantityMutation.mutate(undefined, {
       onSuccess: () => {
         toast.success("Quantidade do produto atualizada");
-      }
+      },
     });
   };
 
@@ -95,18 +79,30 @@ const CartItem = ({
             {productVariantName}
           </p>
           <div className="flex w-[100px] items-center justify-between rounded-lg border p-1">
-            <Button className="h-4 w-4" variant="ghost" onClick={handleDecreaseProductQuantity}>
+            <Button
+              className="h-4 w-4"
+              variant="ghost"
+              onClick={handleDecreaseProductQuantity}
+            >
               <MinusIcon className="h-2 w-2" />
             </Button>
             <p className="text-xs font-medium">{quantity}</p>
-            <Button className="h-4 w-4" variant="ghost" onClick={handleIncreaseProductQuantity}>
+            <Button
+              className="h-4 w-4"
+              variant="ghost"
+              onClick={handleIncreaseProductQuantity}
+            >
               <PlusIcon className="h-2 w-2" />
             </Button>
           </div>
         </div>
       </div>
       <div className="flex flex-col items-end justify-center gap-2">
-        <Button variant="outline" size="icon" onClick={handleRemoveProductFromCart}>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleRemoveProductFromCart}
+        >
           <TrashIcon />
         </Button>
         <p className="text-sm font-bold">

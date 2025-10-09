@@ -10,7 +10,7 @@ import { auth } from "@/lib/auth";
 
 import { decreaseCartProductQuantitySchema } from "./schema";
 
-export const removeProductFromCart = async (
+export const decreaseCartProductQuantity = async (
   data: z.infer<typeof decreaseCartProductQuantitySchema>,
 ) => {
   decreaseCartProductQuantitySchema.parse(data);
@@ -18,26 +18,59 @@ export const removeProductFromCart = async (
     headers: await headers(),
   });
   if (!session?.user) {
-    throw new Error("You must be logged in to add products to cart");
+    throw new Error("Unauthorized");
   }
-
   const cartItem = await db.query.cartItemTable.findFirst({
-    where: (ci, { eq }) => eq(ci.id, data.cartItemId),
-    with: { cart: true },
+    where: (cartItem, { eq }) => eq(cartItem.id, data.cartItemId),
+    with: {
+      cart: true,
+    },
   });
   if (!cartItem) {
-    throw new Error("Variante do produto não encontrada no carrinho");
+    throw new Error("Cart item not found");
   }
-  const cartDoesntBelongToUser = cartItem.cart.userId !== session.user.id;
-  if (cartDoesntBelongToUser) {
-    throw new Error("Não autorizado");
+  const cartDoesNotBelongToUser = cartItem.cart.userId !== session.user.id;
+  if (cartDoesNotBelongToUser) {
+    throw new Error("Unauthorized");
   }
-  if(cartItem.quantity === 1){
+  if (cartItem.quantity === 1) {
     await db.delete(cartItemTable).where(eq(cartItemTable.id, cartItem.id));
     return;
   }
+  await db
+    .update(cartItemTable)
+    .set({ quantity: cartItem.quantity - 1 })
+    .where(eq(cartItemTable.id, cartItem.id));
+};
 
-   await db.update(cartItemTable)
-  .set({ quantity: cartItem.quantity - 1 })
-  .where(eq(cartItemTable.id, cartItem.id));
+
+export const removeProductFromCart = async (
+  data: z.infer<typeof decreaseCartProductQuantitySchema>,
+) => {
+  
+  decreaseCartProductQuantitySchema.parse(data);
+
+  
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+  const cartItem = await db.query.cartItemTable.findFirst({
+    where: (cartItem, { eq }) => eq(cartItem.id, data.cartItemId),
+    with: {
+      cart: true,
+    },
+  });
+  if (!cartItem) {
+    throw new Error("Cart item not found");
+  }
+  const cartDoesNotBelongToUser = cartItem.cart.userId !== session.user.id;
+  if (cartDoesNotBelongToUser) {
+    throw new Error("Unauthorized");
+  }
+
+  
+  await db.delete(cartItemTable).where(eq(cartItemTable.id, data.cartItemId));
 };
