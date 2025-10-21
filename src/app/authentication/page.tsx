@@ -31,3 +31,9 @@ const Authentication = () => {
   );
 }
 export default Authentication;
+
+
+//https://www.better-auth.com/docs/authentication/google doc para implementar login com google
+//no .env colocar as variaveis GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET  link para a cloud console https://console.cloud.google.com
+//colocar tb no .env BETTER_AUTH_SECRET com uma string aleatoria para o secret do better auth
+//colocar no .env DATABASE_URL a url do banco de dados postgresql neste projeto estou usando o neon.tech
