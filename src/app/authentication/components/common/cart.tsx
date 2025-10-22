@@ -1,7 +1,7 @@
 "use client";
 
-
 import { ShoppingBasketIcon } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,7 +19,7 @@ import { useCart } from "@/hooks/queries/use-carts";
 import CartItem from "./cart-item";
 
 export const Cart = () => {
-  const { data: cart}= useCart();
+  const { data: cart } = useCart();
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -32,7 +32,7 @@ export const Cart = () => {
         <SheetHeader>
           <SheetTitle>Carrinho</SheetTitle>
         </SheetHeader>
-       <div className="flex h-full flex-col px-5 pb-5">
+        <div className="flex h-full flex-col px-5 pb-5">
           <div className="flex h-full max-h-full flex-col overflow-hidden">
             <ScrollArea className="h-full">
               <div className="flex h-full flex-col gap-8">
@@ -77,10 +77,12 @@ export const Cart = () => {
                 <p>{formatCentesToBRL(cart?.totalPriceInCents ?? 0)}</p>
               </div>
 
-              <Button className="mt-5 rounded-full">Finalizar compra</Button>
+              <Button className="mt-5 rounded-full" asChild>
+                <Link href="/cart/identification">Finalizar compra</Link>
+              </Button>
             </div>
           )}
-          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
