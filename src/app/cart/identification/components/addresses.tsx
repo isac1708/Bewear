@@ -1,5 +1,6 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
@@ -20,10 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCreateShippingAddress } from "@/hooks/mutations/use-add-address";
+import { getShippingAddressesQueryKey, useShippingAddresses } from "@/hooks/queries/use-shipping-addresses";
 
 const Addresses = () => {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const createShippingAddressMutation = useCreateShippingAddress();
+  const { data: shippingAddresses, isLoading } = useShippingAddresses();
+  const queryClient = useQueryClient();
 
   const formSchema = z.object({
     email: z.email("Email inválido").min(1, "Email é obrigatório"),
@@ -60,7 +64,13 @@ const Addresses = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await createShippingAddressMutation.mutateAsync(values);
+      await createShippingAddressMutation.mutateAsync(values, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: getShippingAddressesQueryKey(),
+          });
+        },
+      });
       toast.success("Endereço criado com sucesso!");
       form.reset();
       setSelectedAddress(null);
@@ -77,11 +87,25 @@ const Addresses = () => {
       </CardHeader>
       <CardContent>
         <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress}>
+          {!isLoading && shippingAddresses?.map((address) => (
+            <Card key={address.id}>
+              <CardContent >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value={address.id} id={address.id} />
+                  <Label htmlFor={address.id}>
+                    {address.recipientName}, {address.street}, {address.number},
+                    {address.complement && ` ${address.complement}, `} {address.neighborhood},
+                    {address.city} - {address.state}, {address.zipCode}
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
           <Card>
             <CardContent>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="add_new" id="add_new" />
-                <Label htmlFor="option-two">Adicionar novo endereço</Label>
+                <Label htmlFor="add_new">Adicionar novo endereço</Label>
               </div>
             </CardContent>
           </Card>
