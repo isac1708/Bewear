@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -18,17 +19,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useCreateShippingAddress } from "@/hooks/mutations/use-add-address";
 
 const Addresses = () => {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const createShippingAddressMutation = useCreateShippingAddress();
 
   const formSchema = z.object({
     email: z.email("Email inválido").min(1, "Email é obrigatório"),
-    firstName: z.string().min(1, "Primeiro Nome é obrigatório"),
-    lastName: z.string().min(1, "Sobrenome é obrigatório"),
-    cpf: z.string().min(14, "CPF inválido"),
-    phone: z.string().min(1, "Celular é obrigatório"),
-    zipCode: z.string().min(9, "CEP inválido"), // A máscara 00000-000 tem 9 caracteres
+    fullName: z.string().min(1, "Nome Completo é obrigatório"),
+    cpf: z.string().min(14, "CPF inválido"), // Assuming masked CPF will have 14 characters
+    phone: z.string().min(15, "Celular inválido"), // Masked phone will have 15 characters (XX) XXXXX-XXXX
+    zipCode: z.string().min(9, "CEP inválido"), // Masked CEP will have 9 characters
     address: z.string().min(1, "Endereço é obrigatório"),
     number: z.string().min(1, "Número é obrigatório"),
     complement: z.string().optional(),
@@ -41,8 +43,7 @@ const Addresses = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
-      firstName: "",
-      lastName: "",
+      fullName: "",
       cpf: "",
       phone: "",
       zipCode: "",
@@ -55,9 +56,18 @@ const Addresses = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    // Lógica para adicionar o novo endereço
+  const { isPending } = createShippingAddressMutation;
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      await createShippingAddressMutation.mutateAsync(values);
+      toast.success("Endereço criado com sucesso!");
+      form.reset();
+      setSelectedAddress(null);
+    } catch (error) {
+      toast.error("Erro ao criar endereço. Tente novamente.");
+      console.error(error);
+    }
   };
 
   return (
@@ -95,34 +105,19 @@ const Addresses = () => {
                   </FormItem>
                 )}
               />
-              <div className="flex gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Primeiro Nome</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Primeiro Nome" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Sobrenome</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Sobrenome" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome Completo" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex gap-4">
                 <FormField
                   control={form.control}
@@ -261,7 +256,7 @@ const Addresses = () => {
                   )}
                 />
               </div>
-              <Button type="submit">Adicionar Endereço</Button>
+              <Button type="submit" disabled={isPending}>Adicionar Endereço</Button>
             </form>
           </Form>
         )}
