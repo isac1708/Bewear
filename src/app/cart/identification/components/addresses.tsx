@@ -20,13 +20,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { shippingAddressTable } from "@/db/schema";
 import { useCreateShippingAddress } from "@/hooks/mutations/use-add-address";
 import { getShippingAddressesQueryKey, useShippingAddresses } from "@/hooks/queries/use-shipping-addresses";
 
-const Addresses = () => {
+interface AddressesProps {
+  shippingAddresses: (typeof shippingAddressTable.$inferSelect)[];
+}
+
+
+const Addresses = ({ shippingAddresses }: AddressesProps) => {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const createShippingAddressMutation = useCreateShippingAddress();
-  const { data: shippingAddresses, isLoading } = useShippingAddresses();
+  
   const queryClient = useQueryClient();
 
   const formSchema = z.object({
@@ -87,7 +93,7 @@ const Addresses = () => {
       </CardHeader>
       <CardContent>
         <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress}>
-          {!isLoading && shippingAddresses?.map((address) => (
+          {shippingAddresses?.map((address) => (
             <Card key={address.id}>
               <CardContent >
                 <div className="flex items-center space-x-2">
