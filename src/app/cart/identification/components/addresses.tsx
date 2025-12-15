@@ -1,7 +1,7 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
@@ -22,18 +22,28 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { shippingAddressTable } from "@/db/schema";
 import { useCreateShippingAddress } from "@/hooks/mutations/use-add-address";
-import { getShippingAddressesQueryKey, useShippingAddresses } from "@/hooks/queries/use-shipping-addresses";
+import { useUpdateCartShippingAddress } from "@/hooks/mutations/use-update-cart-shipping-address";
+import { CartWithRelations, getCartQueryKey, useCart } from "@/hooks/queries/use-cart";
+import { getShippingAddressesQueryKey } from "@/hooks/queries/use-shipping-addresses";
 
 interface AddressesProps {
   shippingAddresses: (typeof shippingAddressTable.$inferSelect)[];
+  defaultSelectedAddressId?: string | null;
 }
 
 
-const Addresses = ({ shippingAddresses }: AddressesProps) => {
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+const Addresses = ({ shippingAddresses, defaultSelectedAddressId }: AddressesProps) => {
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(defaultSelectedAddressId || null);
   const createShippingAddressMutation = useCreateShippingAddress();
-  
+  const updateCartShippingAddressMutation = useUpdateCartShippingAddress();
+  const { data: cart, isLoading: isCartLoading } = useCart();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (createShippingAddressMutation.isSuccess) {
+      window.location.reload();
+    }
+  }, [createShippingAddressMutation.isSuccess]);
 
   const formSchema = z.object({
     email: z.email("Email inválido").min(1, "Email é obrigatório"),
@@ -70,21 +80,73 @@ const Addresses = ({ shippingAddresses }: AddressesProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await createShippingAddressMutation.mutateAsync(values, {
-        onSuccess: () => {
+      const newAddress = await createShippingAddressMutation.mutateAsync(values, {
+        onSuccess: (data) => {
           queryClient.invalidateQueries({
             queryKey: getShippingAddressesQueryKey(),
           });
+          queryClient.setQueryData(getCartQueryKey(), (oldCart: CartWithRelations | undefined) => {
+            if (oldCart && data) {
+              return { ...oldCart, shippingAddressId: data.id };
+            }
+            return oldCart;
+          });
         },
       });
-      toast.success("Endereço criado com sucesso!");
+
+      if (!typedCart.id) {
+        toast.error("Não foi possível encontrar o carrinho.");
+        return;
+      }
+
+      await updateCartShippingAddressMutation.mutateAsync({
+        cartId: typedCart.id,
+        shippingAddressId: newAddress.id,
+      });
+
+      toast.success("Endereço criado e vinculado ao carrinho com sucesso!");
       form.reset();
-      setSelectedAddress(null);
+      setSelectedAddress(newAddress.id); // Seleciona o novo endereço
     } catch (error) {
       toast.error("Erro ao criar endereço. Tente novamente.");
       console.error(error);
     }
   };
+
+  const handleProceedToPayment = async () => {
+    if (!selectedAddress || selectedAddress === "add_new") {
+      toast.error("Por favor, selecione um endereço ou adicione um novo.");
+      return;
+    }
+
+    if (!typedCart.id) {
+      toast.error("Não foi possível encontrar o carrinho.");
+      return;
+    }
+
+    try {
+      await updateCartShippingAddressMutation.mutateAsync({
+        cartId: typedCart.id,
+        shippingAddressId: selectedAddress,
+      });
+      toast.success("Endereço vinculado ao carrinho com sucesso! Redirecionando para o pagamento...");
+      // TODO: Redirecionar para a página de pagamento
+    } catch (error) {
+      toast.error("Erro ao vincular endereço ao carrinho. Tente novamente.");
+      console.error(error);
+    }
+  };
+
+  if (isCartLoading) {
+    return <div>Carregando carrinho...</div>;
+  }
+
+  if (!cart) {
+    return <div>Não foi possível carregar o carrinho.</div>;
+  }
+
+  // Garante que o TypeScript saiba que `cart` é do tipo CartWithRelations a partir daqui
+  const typedCart: CartWithRelations = cart;
 
   return (
     <Card>
@@ -95,7 +157,7 @@ const Addresses = ({ shippingAddresses }: AddressesProps) => {
         <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress}>
           {shippingAddresses?.map((address) => (
             <Card key={address.id}>
-              <CardContent >
+              <CardContent>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value={address.id} id={address.id} />
                   <Label htmlFor={address.id}>
@@ -104,6 +166,13 @@ const Addresses = ({ shippingAddresses }: AddressesProps) => {
                     {address.city} - {address.state}, {address.zipCode}
                   </Label>
                 </div>
+                {selectedAddress === address.id && ( // Botão "Ir para pagamento" apenas se este endereço estiver selecionado
+                  <div className="flex justify-end mt-4">
+                    <Button onClick={handleProceedToPayment} disabled={updateCartShippingAddressMutation.isPending}>
+                      Ir para pagamento
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

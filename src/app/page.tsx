@@ -38,7 +38,21 @@ const Home = async () => {
             className="h-auto w-full"
           />
         </div>
-
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-5">
+            <h2 className="font-bold">Marcas parceiras</h2>
+          </div>
+          <div className="px-5">
+            <Image
+              src="/marcas.png"
+              alt="Marcas parceiras"
+              height={0}
+              width={0}
+              sizes="80vw"
+              className="h-auto w-full"
+            />
+          </div>
+        </div>
         <ProductList products={products} title="Mais vendidos" />
         <div>{CategorySelector({ categories })}</div>
 
@@ -53,7 +67,7 @@ const Home = async () => {
           />
         </div>
         <ProductList products={newlyCreatedProducts} title="Novos Produtos" />
-         <Footer />
+        <Footer />
       </div>
     </>
   );

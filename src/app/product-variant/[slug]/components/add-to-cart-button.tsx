@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
-import { addCartProducts } from "@/actions/add-cart-products";
+import { addProductToCart } from "@/actions/add-cart-products";
 import { Button } from "@/components/ui/button";
 
 interface AddToCartButtonProps {
@@ -19,7 +19,7 @@ const AddToCartButton = ({
   const { mutate, isPending } = useMutation({
     mutationKey: ["addProductToCart", productVariantId, quantity],
     mutationFn: () =>
-      addCartProducts({
+      addProductToCart({
         productVariantId,
         quantity,
       }),

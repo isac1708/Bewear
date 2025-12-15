@@ -5,9 +5,10 @@ import { headers } from "next/headers";
 
 import { db } from "@/db";
 import { cartTable } from "@/db/schema";
+import { CartWithRelations } from "@/hooks/queries/use-cart";
 import { auth } from "@/lib/auth";
 
-export const getCart = async () => {
+export const getCart = async (): Promise<CartWithRelations> => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -27,17 +28,20 @@ export const getCart = async () => {
     },
   });
   if (!cart) {
-    const newCart = await db
+    const [newCart] = await db
       .insert(cartTable)
       .values({
         userId: session.user.id,
       })
       .returning();
     return {
-      ...newCart,
+      id: newCart.id,
+      userId: newCart.userId,
+      createdAt: newCart.createdAt,
+      shippingAddressId: newCart.shippingAddressId || null, // Garante que seja null se não estiver definido
       items: [],
       totalPriceInCents:0,
-    };
+    } as CartWithRelations;
   }
   return {
     ...cart,
@@ -45,5 +49,5 @@ export const getCart = async () => {
       (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
       0,
     ),
-  };
+  } as CartWithRelations;
 };
