@@ -4,23 +4,28 @@ import { redirect } from "next/navigation";
 
 import Footer from "@/app/authentication/components/common/footer";
 import Header from "@/app/authentication/components/common/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
-import { cartTable, shippingAddressTable } from "@/db/schema";
+import { cartTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 
 import CartSummary from "../components/cart-summary";
-import Addresses from "./components/addresses";
+import { formatAddress } from "../helpers/address";
 
-const IdentificationPage = async () => {
+const ConfirmationPage = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+
   if (!session?.user) {
     redirect("/");
   }
+
   const cart = await db.query.cartTable.findFirst({
     where: eq(cartTable.userId, session.user.id),
     with: {
+      shippingAddress: true,
       items: {
         with: {
           productVariant: {
@@ -32,29 +37,40 @@ const IdentificationPage = async () => {
       },
     },
   });
+
   if (!cart || cart.items.length === 0) {
     redirect("/");
   }
-  const shippingAddresses = await db.query.shippingAddressTable.findMany({
-    where: eq(shippingAddressTable.userId, session.user.id),
-  });
 
-
-  const CartTotalPriceInCents = cart.items.reduce(
+  const cartTotalPriceInCents = cart.items.reduce(
     (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
     0,
   );
+  if (!cart.shippingAddressId || !cart.shippingAddress) {
+    redirect("/cart/identification");
+  }
+ 
+
   return (
     <div >
       <Header />
       <div className="space-y-4 px-5">
-        <Addresses
-          shippingAddresses={shippingAddresses}
-          defaultSelectedAddressId={cart.shippingAddressId}
-        />
-        <CartSummary
-          subtotalInCents={CartTotalPriceInCents}
-          totalInCents={CartTotalPriceInCents}
+        <Card>
+            <CardHeader>
+                <CardTitle>Identificação</CardTitle>
+            </CardHeader>
+            <CardContent  className="space-y-6">
+                <Card>
+                    <CardContent>
+                        <p className="text-sm">{ formatAddress(cart.shippingAddress) }</p>
+                    </CardContent>
+                </Card>
+                <Button className="w-full mt-4 rounded-full" size="lg">Finalizar compra</Button>
+            </CardContent>
+        </Card>
+      <CartSummary
+          subtotalInCents={cartTotalPriceInCents}
+          totalInCents={cartTotalPriceInCents}
           products={cart.items.map((item) => ({
             id: item.id,
             name: item.productVariant.product?.name ?? item.productVariant.name,
@@ -65,10 +81,11 @@ const IdentificationPage = async () => {
           }))}
         />
       </div>
-     <div className="mt-12">
-      <Footer/>
-     </div>
+      <div className="mt-12">
+          <Footer />
+      </div>
     </div>
   );
 };
-export default IdentificationPage;
+
+export default ConfirmationPage;

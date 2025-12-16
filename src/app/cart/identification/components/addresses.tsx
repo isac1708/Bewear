@@ -1,6 +1,7 @@
 "use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { PatternFormat } from "react-number-format";
@@ -26,6 +27,8 @@ import { useUpdateCartShippingAddress } from "@/hooks/mutations/use-update-cart-
 import { CartWithRelations, getCartQueryKey, useCart } from "@/hooks/queries/use-cart";
 import { getShippingAddressesQueryKey } from "@/hooks/queries/use-shipping-addresses";
 
+import { formatAddress } from "../../helpers/address";
+
 interface AddressesProps {
   shippingAddresses: (typeof shippingAddressTable.$inferSelect)[];
   defaultSelectedAddressId?: string | null;
@@ -33,6 +36,7 @@ interface AddressesProps {
 
 
 const Addresses = ({ shippingAddresses, defaultSelectedAddressId }: AddressesProps) => {
+  const router = useRouter();
   const [selectedAddress, setSelectedAddress] = useState<string | null>(defaultSelectedAddressId || null);
   const createShippingAddressMutation = useCreateShippingAddress();
   const updateCartShippingAddressMutation = useUpdateCartShippingAddress();
@@ -130,6 +134,7 @@ const Addresses = ({ shippingAddresses, defaultSelectedAddressId }: AddressesPro
         shippingAddressId: selectedAddress,
       });
       toast.success("Endereço vinculado ao carrinho com sucesso! Redirecionando para o pagamento...");
+      router.push("/cart/confirmation");
       // TODO: Redirecionar para a página de pagamento
     } catch (error) {
       toast.error("Erro ao vincular endereço ao carrinho. Tente novamente.");
@@ -161,9 +166,9 @@ const Addresses = ({ shippingAddresses, defaultSelectedAddressId }: AddressesPro
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value={address.id} id={address.id} />
                   <Label htmlFor={address.id}>
-                    {address.recipientName}, {address.street}, {address.number},
-                    {address.complement && ` ${address.complement}, `} {address.neighborhood},
-                    {address.city} - {address.state}, {address.zipCode}
+                    <div>
+                      <p className="text-sm">{formatAddress(address)}</p>
+                    </div>
                   </Label>
                 </div>
                 {selectedAddress === address.id && ( // Botão "Ir para pagamento" apenas se este endereço estiver selecionado

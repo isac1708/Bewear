@@ -1,16 +1,13 @@
-import { z } from "better-auth";
-import { count, time } from "console";
-import { create } from "domain";
-import { ne, relations } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { email, number } from "zod";
 
 export const userTable = pgTable("user", {
   id: text("id").primaryKey(),
@@ -33,6 +30,7 @@ export const userRelations = relations(userTable, ({ many,one }) => ({
   cart: one(cartTable, {
     fields: [userTable.id],
     references: [cartTable.userId],}),
+    orders: many(orderTable),
 }));
 
 export const sessionTable = pgTable("session", {
@@ -123,11 +121,13 @@ export const productRelation = relations(productTable, ({ one, many }) => ({
 
 export const productVariantRelation = relations(
   productVariantTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     product: one(productTable, {
       fields: [productVariantTable.productId],
       references: [productTable.id],
     }),
+    cartItems: many(cartItemTable),
+    orderItems: many(orderItemTable),
   }),
 );
 
@@ -153,15 +153,16 @@ export const shippingAddressTable = pgTable("shipping_address", {
 
 export const shippingAddressRelations = relations(
   shippingAddressTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     user: one(userTable, {
       fields: [shippingAddressTable.userId],
       references: [userTable.id],
     }),
-     cart: one(cartTable, {
+    cart: one(cartTable, {
       fields: [shippingAddressTable.id],
       references: [cartTable.shippingAddressId],
     }),
+    orders: many(orderTable),
   }),
 );
 
@@ -208,6 +209,72 @@ export const cartItemRelations = relations(cartItemTable, ({ one }) => ({
   }),
   productVariant: one(productVariantTable, {
     fields: [cartItemTable.productVariantId],
+    references: [productVariantTable.id],
+  }),
+}));
+
+ export const orderStatus= pgEnum("order_status", ["pending", "paid", "shipped", "delivered", "cancelled"]);
+
+ //tabela para armazenar os pedidos
+export const orderTable = pgTable("order", {
+  id: uuid().primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  shippingAddressId: uuid("shipping_address_id")
+    .notNull()
+    .references(() => shippingAddressTable.id, { onDelete: "set null" }),
+    recipientName: text("recipient_name").notNull(),
+    street: text("street").notNull(),
+    number: text("number").notNull(),
+    complement: text("complement"),
+    city: text("city").notNull(),
+    state: text("state").notNull(),
+    neighborhood: text("neighborhood").notNull(),
+    zipCode: text("zip_code").notNull(),
+    country: text("country").notNull(),
+    phone: text("phone").notNull(),
+    email: text("email").notNull(),
+    cpfOrCnpj: text("cpf_or_cnpj").notNull(),
+    totalPriceInCents: integer("total_price_in_cents").notNull(),
+    status: orderStatus().notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+//relacionamento entre a tabela de pedidos e as tabelas de usuário, endereço de entrega e itens do pedido
+export const orderRelations = relations(orderTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [orderTable.userId],
+    references: [userTable.id],
+  }),
+  shippingAddress: one(shippingAddressTable, {
+    fields: [orderTable.shippingAddressId],
+    references: [shippingAddressTable.id],
+  }),
+}));
+
+//tabela para armazenar os itens do pedido
+export const orderItemTable = pgTable("order_item", {
+  id: uuid().primaryKey().defaultRandom(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orderTable.id, { onDelete: "cascade" }),
+  productVariantId: uuid("product_variant_id")
+    .notNull()
+    .references(() => productVariantTable.id, { onDelete: "restrict" }),
+    quantity: integer("quantity").notNull().default(1),
+    priceInCents: integer("price_in_cents").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+//relacionamento entre a tabela de itens do pedido e as tabelas de pedido e variante do produto
+export const orderItemRelations = relations(orderItemTable, ({ one }) => ({
+  order: one(orderTable, {
+    fields: [orderItemTable.orderId],
+    references: [orderTable.id],
+  }),
+  productVariant: one(productVariantTable, {
+    fields: [orderItemTable.productVariantId],
     references: [productVariantTable.id],
   }),
 }));
