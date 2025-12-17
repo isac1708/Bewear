@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -9,40 +10,48 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } f
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
 
 const FinishOrderButton = () => {
-   const [successDialogOpen, setSuccessDialogOpen] = useState(true);
-   const finishOrderMutation = useFinishOrder();
+    const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+    const finishOrderMutation = useFinishOrder();
+    const handleFinishOrder = () => {
+        finishOrderMutation.mutate();
+        setSuccessDialogOpen(true);
+    }
     return (
         <>
-        <Button className="w-full mt-4 rounded-full" size="lg" onClick={() =>
-             finishOrderMutation.mutate()} disabled={finishOrderMutation.isPending}>
+            <Button
+                className="w-full mt-4 rounded-full"
+                size="lg"
+                onClick={handleFinishOrder}
+                disabled={finishOrderMutation.isPending}
+            >
                 {finishOrderMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 Finalizar compra
-        </Button>
-        <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <DialogContent className="text-center">
-          <Image
-            src="/illustration.svg"
-            alt="Success"
-            width={300}
-            height={300}
-            className="mx-auto"
-          />
-          <DialogTitle className="mt-4 text-2xl">Pedido efetuado!</DialogTitle>
-          <DialogDescription className="font-medium">
-            Seu pedido foi efetuado com sucesso. Você pode acompanhar o status
-            na seção de “Meus Pedidos”.
-          </DialogDescription>
+            </Button>
+            <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+                <DialogContent className="text-center">
+                    <Image
+                        src="/illustration.svg"
+                        alt="Success"
+                        width={300}
+                        height={300}
+                        className="mx-auto"
+                    />
+                    <DialogTitle className="mt-4 text-2xl">Pedido efetuado!</DialogTitle>
+                    <DialogDescription className="font-medium">
+                        Seu pedido foi efetuado com sucesso. Você pode acompanhar o status
+                        na seção de “Meus Pedidos”.
+                    </DialogDescription>
 
-          <DialogFooter className=" items-center">
-            <Button className="rounded-full " size="lg">
-              Ver meus pedidos
-            </Button>
-            <Button className="rounded-full " variant="outline" size="lg">
-              Voltar para a loja
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-       </Dialog>
+                    <DialogFooter className=" items-center">
+                        <Button className="rounded-full " size="lg">
+                            Ver meus pedidos
+                        </Button>
+                        <Button className="rounded-full " variant="outline" size="lg" asChild>
+                            <Link href="/">Voltar para a loja</Link>
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

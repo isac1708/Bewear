@@ -50,26 +50,26 @@ const ConfirmationPage = async () => {
   if (!cart.shippingAddressId || !cart.shippingAddress) {
     redirect("/cart/identification");
   }
- 
+
 
   return (
     <div >
       <Header />
       <div className="space-y-4 px-5">
         <Card>
-            <CardHeader>
-                <CardTitle>Identificação</CardTitle>
-            </CardHeader>
-            <CardContent  className="space-y-6">
-                <Card>
-                    <CardContent>
-                        <p className="text-sm">{ formatAddress(cart.shippingAddress) }</p>
-                    </CardContent>
-                </Card>
-                <FinishOrderButton />
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Identificação</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Card>
+              <CardContent>
+                <p className="text-sm">{formatAddress(cart.shippingAddress)}</p>
+              </CardContent>
+            </Card>
+            <FinishOrderButton />
+          </CardContent>
         </Card>
-      <CartSummary
+        <CartSummary
           subtotalInCents={cartTotalPriceInCents}
           totalInCents={cartTotalPriceInCents}
           products={cart.items.map((item) => ({
@@ -83,7 +83,7 @@ const ConfirmationPage = async () => {
         />
       </div>
       <div className="mt-12">
-          <Footer />
+        <Footer />
       </div>
     </div>
   );
